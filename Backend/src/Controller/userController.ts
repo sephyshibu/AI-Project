@@ -8,7 +8,7 @@ import bcrypt from "bcryptjs";
 import { OAuth2Client } from "google-auth-library";
 
 import crypto from "crypto";
-import { v4 as uuidv4 } from "uuid";
+
 import { Request, Response } from "express";
 
 // MongoDB Models
