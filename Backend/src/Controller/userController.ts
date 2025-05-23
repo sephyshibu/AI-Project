@@ -1,9 +1,13 @@
 import dotenv from "dotenv";
 dotenv.config();
-
+import { execFile } from "child_process";
+import { Video } from "../models/VideoModel";
+import { Transcript } from "../models/TranscriptModel";
 import jwt from "jsonwebtoken";
 import {userModel} from '../models/UserModel'
+import path from "path";
 import bcrypt from "bcryptjs";
+import axios from "axios";
 
 import { OAuth2Client } from "google-auth-library";
 
@@ -97,9 +101,83 @@ export const videouploadfile=async(req:Request,res:Response):Promise<void>=>{
         res.status(400).json({message:"no file founded"})
         return
     }
-    res.status(200).json({
-        message:"Video upload sucessfully",
-        filename:req.file.fieldname,
-        path:req.file.path
-    })
+    const file = req.file; 
+
+    
+    // Save video info to DB
+    const video = new Video({
+      filename: file.originalname,
+      filepath: file.path,
+    });
+    await video.save();
+
+    // Call python script to transcribe audio from video
+    const pythonScriptPath = path.join(__dirname, "..", "utils", "transcribe.py"); // adjust path accordingly
+
+    const transcriptText = await new Promise<string>((resolve, reject) => {
+      execFile("python", [pythonScriptPath, file.path], (error, stdout, stderr) => {
+        if (error) return reject(error);
+        if (stderr) console.error("Python stderr:", stderr);
+        resolve(stdout.trim());
+      });
+    });
+
+    // Save transcript to DB with reference to video
+    const transcript = new Transcript({
+      video: video._id,
+      transcriptText,
+    });
+    await transcript.save();
+
+
+     res.status(200).json({
+        message: "Video uploaded successfully",
+        filename: file.fieldname,
+        path: file.path,
+        transcript: transcriptText,
+  });
+}
+
+export const generatequestions=async(req:Request,res:Response):Promise<void>=>{
+    const{segment,filename}=req.body
+
+    try {
+        const results:Record<number,string[]>={}
+
+        for(let i=0;i<segment.length;i++){
+                const prompt = `
+                    You are an AI tutor. Based on the following transcript segment, generate 3 multiple-choice questions with 4 options each (A-D), and mark the correct answer.
+
+                    Transcript:
+                    ${segment[i]}
+
+                    Output format:
+                    1. Question text
+                    A. Option A
+                    B. Option B
+                    C. Option C
+                    D. Option D
+                    Answer: B
+                    Repeat for 3 questions.
+                    `;
+
+               const ollamaResponse = await axios.post('http://localhost:11434/api/generate', {
+                model: 'llama2',
+                prompt,
+                stream: false
+            });
+
+            results[i] = ollamaResponse.data.response
+                .split(/\n\d+\./)  // crude splitting of questions
+                .filter((q:any) => q.trim().length > 0)
+                .map((q:any) => q.trim());
+            }
+
+            res.status(200).json(results);
+        } catch (error) {
+            console.error("Error generating questions:", error);
+            res.status(500).json({ message: "Failed to generate questions." });
+        }
+
+    
 }

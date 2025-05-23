@@ -12,9 +12,10 @@ const VideoUI:React.FC=()=>{
     const [questionsBySegment, setQuestionsBySegment] = useState<Record<number, string[]>>({});
 
     
-    const splittrancriptintosegment = (transcript: string): string[] => {
+    const splittrancriptintosegment = (transcript: string,secondspersegment:number=15): string[] => {
         const words = transcript.split(' ');
-        const wordsPerSegment = 750; // approx 5 minutes at 150wpm
+        const wordsPerMinute = 150; // approx 5 minutes at 150wpm
+        const wordsPerSegment = Math.round((wordsPerMinute / 60) * secondspersegment);
         const segments = [];
         for (let i = 0; i < words.length; i += wordsPerSegment) {
         segments.push(words.slice(i, i + wordsPerSegment).join(' '));
@@ -56,9 +57,11 @@ const VideoUI:React.FC=()=>{
                 })
                 setStatus("Processing Transcript")
 
-                const transcript=await axiosInstance.get(`/api/transcript?filename=${videoFile.name}`)
-                const fulltranscruipt:string=transcript.data.transcript
-                const segment=splittrancriptintosegment(fulltranscruipt)
+                const transcript=response.data.transcript
+                const fulltranscruipt:string=transcript
+                console.log("transcript",fulltranscruipt)
+                const secondspersegment= 15; // Chan
+                const segment=splittrancriptintosegment(fulltranscruipt,secondspersegment)
                 setTranscriptSegments(segment)
 
 
