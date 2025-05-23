@@ -1,92 +1,83 @@
 import React, { useState } from "react";
 import axiosInstance from "../axios/axios";
 
+const VideoUI: React.FC = () => {
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [status, setStatus] = useState<string>("Idle");
+  const [transcriptSegments, setTranscriptSegments] = useState<string[]>([]);
+  const [questionsBySegment, setQuestionsBySegment] = useState<Record<number, string[]>>({});
+  const [visibleSegmentCount, setVisibleSegmentCount] = useState(0);
 
+  const splitTranscriptIntoSegments = (transcript: string, secondsPerSegment: number = 15): string[] => {
+    const words = transcript.split(" ");
+    const wordsPerMinute = 150;
+    const wordsPerSegment = Math.round((wordsPerMinute / 60) * secondsPerSegment);
+    const segments = [];
+    for (let i = 0; i < words.length; i += wordsPerSegment) {
+      segments.push(words.slice(i, i + wordsPerSegment).join(" "));
+    }
+    return segments;
+  };
 
+  const handleVideoUpload = async () => {
+    if (!videoFile) return;
 
-const VideoUI:React.FC=()=>{
-    const [videoFile,setVideoFile]=useState<File|null>(null)
-    const [uploadProgress, setUploadProgress] = useState<number>(0);
-    const [status, setStatus] = useState<string>('Idle');
-    const [transcriptSegments, setTranscriptSegments] = useState<string[]>([]);
-    const [questionsBySegment, setQuestionsBySegment] = useState<Record<number, string[]>>({});
+    setStatus("Checking Video Duration...");
 
-    
-    const splittrancriptintosegment = (transcript: string,secondspersegment:number=15): string[] => {
-        const words = transcript.split(' ');
-        const wordsPerMinute = 150; // approx 5 minutes at 150wpm
-        const wordsPerSegment = Math.round((wordsPerMinute / 60) * secondspersegment);
-        const segments = [];
-        for (let i = 0; i < words.length; i += wordsPerSegment) {
-        segments.push(words.slice(i, i + wordsPerSegment).join(' '));
+    const videoElement = document.createElement("video");
+    videoElement.preload = "metadata";
+
+    videoElement.onloadedmetadata = async () => {
+      window.URL.revokeObjectURL(videoElement.src);
+      const durationInMinutes = videoElement.duration / 60;
+
+      if (durationInMinutes > 60) {
+        setStatus("Error: Video exceeds 60 minutes limit");
+        alert("Video duration must be 60 minutes or less.");
+        return;
+      }
+
+      setStatus("Uploading...");
+      const formData = new FormData();
+      formData.append("video", videoFile);
+
+      try {
+        const response = await axiosInstance.post("/api/upload", formData, {
+          onUploadProgress: (progressEvent) => {
+            const percent = Math.round((progressEvent.loaded * 100) / (progressEvent.total || 1));
+            setUploadProgress(percent);
+          },
+        });
+
+        const fullTranscript: string = response.data.transcript;
+        const segments = splitTranscriptIntoSegments(fullTranscript, 15);
+        setTranscriptSegments(segments);
+        setStatus("Processing segments...");
+
+        // Sequentially process each segment
+        for (let i = 0; i < segments.length; i++) {
+          setStatus(`Generating questions for segment ${i + 1}...`);
+          const response = await axiosInstance.post("/api/questions", {
+            segment: [segments[i]],
+            filename: videoFile.name,
+          });
+          setQuestionsBySegment((prev) => ({ ...prev, [i]: response.data[0] }));
+          setVisibleSegmentCount((prev) => prev + 1);
         }
-        return segments;
+
+        setStatus("Complete");
+      } catch (err) {
+        console.error(err);
+        setStatus("Error occurred");
+      }
     };
 
-    const handleVideoUpload=async()=>{
-            if(!videoFile) return
-              setStatus('Checking Video Duration...');
+    videoElement.src = URL.createObjectURL(videoFile);
+  };
 
-            // Step 1: Check video duration before upload
-            const videoElement = document.createElement('video');
-            videoElement.preload = 'metadata';
-
-            videoElement.onloadedmetadata = async () => {
-              window.URL.revokeObjectURL(videoElement.src); // Clean up
-
-              const durationInMinutes = videoElement.duration / 60;
-
-              if (durationInMinutes > 60) {
-                setStatus('Error: Video exceeds 60 minutes limit');
-                alert('Video duration must be 60 minutes or less.');
-                return;
-              }
-
-              // Step 2: Proceed with upload if valid
-              setStatus('Uploading....');
-
-            const formData=new FormData()
-            formData.append('video', videoFile)
-
-            try {
-                const response=await axiosInstance.post('/api/upload',formData,{
-                    onUploadProgress:(progressEvent)=>{
-                        const percentagecal=Math.round((progressEvent.loaded*100)/(progressEvent.total ||1));
-                        setUploadProgress(percentagecal)
-                    }
-                })
-                setStatus("Processing Transcript")
-
-                const transcript=response.data.transcript
-                const fulltranscruipt:string=transcript
-                console.log("transcript",fulltranscruipt)
-                const secondspersegment= 15; // Chan
-                const segment=splittrancriptintosegment(fulltranscruipt,secondspersegment)
-                setTranscriptSegments(segment)
-
-
-                setStatus("generating questionsssss")
-                const questionRespoinse=await axiosInstance.post('/api/questions',{
-                    segment,
-                    filename:videoFile.name
-                })
-                setQuestionsBySegment(questionRespoinse.data)
-
-                setStatus('complete')
-
-                
-            } catch (error) {
-              
-                    console.error(error);
-                    setStatus('Error occurred');
-            }
-             
-    }
-
- videoElement.src = URL.createObjectURL(videoFile); // Trigger load
-  }
-    return (
-     <div className="max-w-6xl mx-auto px-6 py-10">
+  return (
+    <div className="max-w-6xl mx-auto px-6 py-10">
       <h1 className="text-4xl font-bold text-center text-blue-700 mb-10">
         🎥 AI Video Transcript & Q&A Generator
       </h1>
@@ -99,7 +90,6 @@ const VideoUI:React.FC=()=>{
             onChange={(e) => setVideoFile(e.target.files?.[0] || null)}
             className="flex-1 border border-gray-300 rounded-lg px-4 py-2"
           />
-
           <button
             onClick={handleVideoUpload}
             disabled={!videoFile || status !== "Idle"}
@@ -126,15 +116,10 @@ const VideoUI:React.FC=()=>{
         </p>
       </div>
 
-      {transcriptSegments.map((segment, index) => (
-        <div
-          key={index}
-          className="bg-white shadow rounded-lg p-6 mb-8 border border-gray-100"
-        >
+      {transcriptSegments.slice(0, visibleSegmentCount).map((segment, index) => (
+        <div key={index} className="bg-white shadow rounded-lg p-6 mb-8 border border-gray-100">
           <h2 className="text-xl font-semibold text-blue-700 mb-3">Segment {index + 1}</h2>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap mb-4 leading-relaxed">
-            {segment}
-          </p>
+          <p className="text-sm text-gray-700 whitespace-pre-wrap mb-4 leading-relaxed">{segment}</p>
 
           <h3 className="text-md font-medium text-gray-800 mb-2">📌 Generated Questions:</h3>
           <ul className="list-disc pl-6 text-sm space-y-1 text-gray-700">
@@ -145,7 +130,7 @@ const VideoUI:React.FC=()=>{
         </div>
       ))}
     </div>
-    );
-  }
+  );
+};
 
-export default VideoUI
+export default VideoUI;
