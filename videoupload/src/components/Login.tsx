@@ -74,7 +74,7 @@ const Login:React.FC=()=>{
                 console.log(response?.data)
                 const userId=response.data.user._id
                 localStorage.setItem("userId",userId)
-                navigate('/');
+                navigate('/videoupload');
             } catch (err: any) {
                 if (err.response && err.response.data && err.response.data.message) {
                   seterror(err.response.data.message); // Server's custom message
@@ -117,7 +117,7 @@ const Login:React.FC=()=>{
             const userId=response.data.user._id
             localStorage.setItem("userId",userId)
             seterror('');
-            navigate('/');
+            navigate('/videoupload');
       
 
 
@@ -176,16 +176,7 @@ const Login:React.FC=()=>{
                 {loading ? "Logging in..." : "LOGIN"}
               </button>
 
-              <GoogleOAuthProvider clientId={clientId}>
-                <div>
-                    <GoogleLogin
-                            onSuccess={handleGoogleLogin}
-                            onError={()=>{
-                                seterror("google login failed")
-                            }}
-                        />
-                </div>
-              </GoogleOAuthProvider>
+              
   
               <div className="text-center text-sm text-gray-600 mt-3">
                

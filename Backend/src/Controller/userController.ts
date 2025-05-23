@@ -150,45 +150,70 @@ export const generatequestions=async(req:Request,res:Response):Promise<void>=>{
         }
         const results:Record<number,string[]>={}
 
-        for(let i=0;i<segment.length;i++){
-                const prompt = `
-                    You are an AI tutor. Based on the following transcript segment, generate 3 multiple-choice questions with 4 options each (A-D), and mark the correct answer in bullet wise.
+        for (let i = 0; i < segment.length; i++) {
+        const prompt = `
+            You are an AI tutor. Based on the following transcript segment, generate exactly 3 multiple-choice questions in JSON format ONLY.
 
-                    Transcript:
-                    ${segment[i]}
+            Do NOT include any explanations, greetings, or text other than the JSON array.
 
-                    Output format:
-                    1. Question text
-                    A. Option A
-                    B. Option B
-                    C. Option C
-                    D. Option D
-                    Answer: B
-                    Repeat for 3 questions.
-                    `;
+            Each question object must have:
+            - "question": the question text
+            - "options": an array of answer options, each with "label" (A, B, C, or D) and "text"
+            - "answer": the label of the correct option
 
-               const ollamaResponse = await axios.post('http://localhost:11434/api/generate', {
-                model: 'llama2',
-                prompt,
-                stream: false
-            });
+            Transcript:
+            ${segment[i]}
 
-            const questions = ollamaResponse.data.response
-                .split(/\n\d+\./)
-                .filter((q: string) => q.trim().length > 0)
-                .map((q: string) => q.trim());
+            Output ONLY the JSON array as shown below (no extra text or commentary):
 
-            results[i] = questions;
+            [
+            {
+                "question": "What is ...?",
+                "options": [
+                { "label": "A", "text": "Option A" },
+                { "label": "B", "text": "Option B" },
+                { "label": "C", "text": "Option C" },
+                { "label": "D", "text": "Option D" }
+                ],
+                "answer": "B"
+            },
+            ...
+            ]
+        `;
 
-            // ✅ Save to DB
-            await QuestionSet.create({
-                video: video._id,
-                segmentIndex: i,
-                segmentText: segment[i],
-                questions,
-            });
+        const ollamaResponse = await axios.post('http://localhost:11434/api/generate', {
+            model: 'llama2',
+            prompt,
+            stream: false
+        });
+
+        const raw = ollamaResponse.data.response;
+
+        // Try direct parse first
+        let questions;
+        try {
+            questions = JSON.parse(raw.trim());
+        } catch {
+            // Fallback: extract JSON substring if extra text included
+            const jsonMatch = raw.match(/\[\s*\{[\s\S]*\}\s*\]/);
+            if (!jsonMatch) {
+            throw new Error("No valid JSON found in AI response");
             }
+            questions = JSON.parse(jsonMatch[0]);
+        }
 
+        await QuestionSet.create({
+            video: video._id,
+            segmentIndex: i,
+            segmentText: segment[i],
+            questions,
+        });
+
+        results[i] = questions;
+        }
+
+
+            // Send all generated questions back
             res.status(200).json(results);
         } catch (error) {
             console.error("Error generating questions:", error);
