@@ -8,7 +8,7 @@ import {userModel} from '../models/UserModel'
 import path from "path";
 import bcrypt from "bcryptjs";
 import axios from "axios";
-
+import { QuestionSet } from "../models/SegmentModel";
 import { OAuth2Client } from "google-auth-library";
 
 import crypto from "crypto";
@@ -140,13 +140,19 @@ export const videouploadfile=async(req:Request,res:Response):Promise<void>=>{
 
 export const generatequestions=async(req:Request,res:Response):Promise<void>=>{
     const{segment,filename}=req.body
+    
 
     try {
+        const video = await Video.findOne({ filename });
+        if (!video) {
+        res.status(404).json({ message: "Video not found" });
+        return;
+        }
         const results:Record<number,string[]>={}
 
         for(let i=0;i<segment.length;i++){
                 const prompt = `
-                    You are an AI tutor. Based on the following transcript segment, generate 3 multiple-choice questions with 4 options each (A-D), and mark the correct answer.
+                    You are an AI tutor. Based on the following transcript segment, generate 3 multiple-choice questions with 4 options each (A-D), and mark the correct answer in bullet wise.
 
                     Transcript:
                     ${segment[i]}
@@ -167,10 +173,20 @@ export const generatequestions=async(req:Request,res:Response):Promise<void>=>{
                 stream: false
             });
 
-            results[i] = ollamaResponse.data.response
-                .split(/\n\d+\./)  // crude splitting of questions
-                .filter((q:any) => q.trim().length > 0)
-                .map((q:any) => q.trim());
+            const questions = ollamaResponse.data.response
+                .split(/\n\d+\./)
+                .filter((q: string) => q.trim().length > 0)
+                .map((q: string) => q.trim());
+
+            results[i] = questions;
+
+            // ✅ Save to DB
+            await QuestionSet.create({
+                video: video._id,
+                segmentIndex: i,
+                segmentText: segment[i],
+                questions,
+            });
             }
 
             res.status(200).json(results);
