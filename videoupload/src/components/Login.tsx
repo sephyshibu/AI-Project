@@ -35,7 +35,7 @@ const Login:React.FC=()=>{
     useEffect(() => {
       const userId = localStorage.getItem("userId");
       if (userId) {
-        navigate("/"); // Redirect to home if user is logged in
+        navigate("/videoupload"); // Redirect to home if user is logged in
       }
     }, [navigate]);
 

@@ -4,7 +4,7 @@ import axiosInstance from "../axios/axios";
 
 
 
-export default function VideoUI(){
+const VideoUI:React.FC=()=>{
     const [videoFile,setVideoFile]=useState<File|null>(null)
     const [uploadProgress, setUploadProgress] = useState<number>(0);
     const [status, setStatus] = useState<string>('Idle');
@@ -24,7 +24,25 @@ export default function VideoUI(){
 
     const handleVideoUpload=async()=>{
             if(!videoFile) return
-            setStatus('Uploading....')
+              setStatus('Checking Video Duration...');
+
+            // Step 1: Check video duration before upload
+            const videoElement = document.createElement('video');
+            videoElement.preload = 'metadata';
+
+            videoElement.onloadedmetadata = async () => {
+              window.URL.revokeObjectURL(videoElement.src); // Clean up
+
+              const durationInMinutes = videoElement.duration / 60;
+
+              if (durationInMinutes > 60) {
+                setStatus('Error: Video exceeds 60 minutes limit');
+                alert('Video duration must be 60 minutes or less.');
+                return;
+              }
+
+              // Step 2: Proceed with upload if valid
+              setStatus('Uploading....');
 
             const formData=new FormData()
             formData.append('video', videoFile)
@@ -59,10 +77,11 @@ export default function VideoUI(){
                     console.error(error);
                     setStatus('Error occurred');
             }
-
+             
     }
 
-
+ videoElement.src = URL.createObjectURL(videoFile); // Trigger load
+  }
     return (
      <div className="max-w-6xl mx-auto px-6 py-10">
       <h1 className="text-4xl font-bold text-center text-blue-700 mb-10">
@@ -123,5 +142,7 @@ export default function VideoUI(){
         </div>
       ))}
     </div>
-  );
-}
+    );
+  }
+
+export default VideoUI

@@ -97,7 +97,7 @@ const Signup:React.FC=()=>{
         try {
             const response=await axiosInstance.post('/signup',formdata)
       
-            navigate('/otp',{state:{details:formdata}})
+            navigate('/')
             console.log(response?.data?.message)
             
         } catch (error:any) {

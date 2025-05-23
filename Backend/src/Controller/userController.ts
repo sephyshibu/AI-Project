@@ -61,25 +61,45 @@ export const login=async(req:Request,res:Response):Promise<void>=>{
 }
 
 export const signup=async(req:Request,res:Response):Promise<void>=>{
-    const{email,name,password}=req.body
+    const{email,name,password,phone}=req.body
+    console.log("signnup", req.body)
     try {
         if(!email || !password || !name){
             res.status(400).json({message:"missing fields  value"})
+            return
         }
 
-        const newuser=await userModel.find({email:email})
+        const newuser=await userModel.findOne({email:email})
+
         if(newuser){
             res.status(400).json({message:"email already registered"})
+            return
         }
+        console.log("after check in backend model")
          const hash = await bcrypt.hash(password, 10);
 
         const newone=await userModel.create({
             name:name,
             password:hash,
-            email:email
+            email:email,phone:phone
         })
         await newone.save()
-    } catch (error) {
-        
+
+        res.status(200).json({message:"created user"})
+    } catch (err: any) {
+    console.error("Signup Error:", err); // <-- Add this
+    res.status(err.statusCode || 500).json({ message: err.message });
+}
+
+}
+export const videouploadfile=async(req:Request,res:Response):Promise<void>=>{
+    if(!req.file){
+        res.status(400).json({message:"no file founded"})
+        return
     }
+    res.status(200).json({
+        message:"Video upload sucessfully",
+        filename:req.file.fieldname,
+        path:req.file.path
+    })
 }

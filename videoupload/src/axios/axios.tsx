@@ -1,10 +1,16 @@
 import axios,{AxiosError,type InternalAxiosRequestConfig} from 'axios';
 import { store,persistor } from '../app/store';
 import { addtoken } from '../features/TokenSlice';
+
+
 const axiosInstance = axios.create({
-    baseURL: import.meta.env.VITE_PORT,
+    baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:3000",
+
     withCredentials: true,
+    
   });
+
+console.log("Base URL is:", import.meta.env.VITE_API_BASE_URL);
 
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
     _retry?: boolean;
