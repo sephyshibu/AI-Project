@@ -8,8 +8,8 @@ const { verify } = require('jsonwebtoken')
 
 router.post('/login',login)
 router.post('/signup',signup)
-router.post('/api/upload',upload.single('video'),videouploadfile)
-router.post('/api/questions',generatequestions)
+router.post('/api/upload',authToken,upload.single('video'),videouploadfile)
+router.post('/api/questions',authToken,generatequestions)
 
 
 module.exports=router

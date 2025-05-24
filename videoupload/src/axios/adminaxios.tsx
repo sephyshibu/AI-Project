@@ -5,7 +5,7 @@ import { adminaddtoken,cleartoken } from '../features/AdminTokenSlice';
 
 // Axios instance
 const axiosInstanceadmin = axios.create({
-    baseURL: import.meta.env.VITE_ADMin_PORT,
+    baseURL: import.meta.env.VITE_ADMin_PORT || 'http://localhost:3000/admin',
     withCredentials: true,
   });
 
@@ -16,12 +16,15 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
     (config: CustomAxiosRequestConfig) => {
       const state = store.getState();
       const token = state.admintoken?.admintoken;
-      const admin=state.admin?.admin
+      const adminEmail = state.admin?.email;
+        if (adminEmail) {
+        config.headers['admin-email'] = adminEmail;
+        }
       console.log("Token being sent in asdmin:", token);
 
 
   
-      console.log("admin in axios", admin);
+
       console.log("admin axios token", token);
       console.log("admin state", state);
   
@@ -34,9 +37,9 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
         config.headers['Authorization'] = `Bearer ${token}`;
       }
 
-       if (admin && admin._id) {
-        config.headers['admin-id'] = admin._id;
-      }  
+      if (adminEmail) {
+        config.headers['admin-email'] = adminEmail;
+        } 
 
       return config
     },

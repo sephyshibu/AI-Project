@@ -2,25 +2,25 @@ import { createSlice } from "@reduxjs/toolkit";
 
 
 interface AdminState{
-    admin:Record<string,any>
+    email:string
 }
 
 const initialState:AdminState = {
-    admin: {}
+    email:''
 };
 const adminSlice = createSlice({
     name: "admin",
     initialState,
     reducers: {
         loginadmin(state, action) {
-            state.admin = action.payload;
+            state.email = action.payload;
         },
       
         logoutadmin(state) {
-            state.admin = {};
+            state.email = '';
         },
          cleanAdmin(state) {
-            state.admin = {};
+            state.email = '';
         },
     }
 });
