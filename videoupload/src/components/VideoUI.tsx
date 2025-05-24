@@ -25,6 +25,17 @@ const VideoUI: React.FC = () => {
     }
     return segments;
   };
+  const handleDownloadJSON = () => {
+      const dataStr = JSON.stringify(questionsBySegment, null, 2);
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "quiz_data.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+
 
   const handleVideoUpload = async () => {
     if (!videoFile) return;
@@ -93,6 +104,7 @@ const VideoUI: React.FC = () => {
 
 
         setStatus("Complete");
+
       } catch (err) {
         console.error(err);
         setStatus("Error occurred");
@@ -144,6 +156,16 @@ const VideoUI: React.FC = () => {
         <p className="text-sm font-semibold mt-4 text-gray-800">
           Status: <span className="text-blue-600">{status}</span>
         </p>
+        {Object.keys(questionsBySegment).length > 0 && (
+        <div className="mt-4 flex justify-end">
+          <button
+            onClick={handleDownloadJSON}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition"
+          >
+            📥 Download Quiz JSON
+          </button>
+        </div>
+      )}
       </div>
 
       {transcript && (
