@@ -36,10 +36,27 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
 }
 
 export const transcriptvideo=async(req:Request,res:Response):Promise<void>=>{
+    console.log("jjwdp")
     try {
         const transcript=await Transcript.find().sort({createdAt:-1})
         res.status(200).json(transcript)
     } catch (err) {
     res.status(500).json({ message: "Failed to fetch transcripts" });
+  }
+}
+
+export const edittrqanscript=async(req:Request,res:Response):Promise<void>=>{
+    try {
+        const{id}=req.params
+        const {transcriptText}=req.body
+
+        const result=await Transcript.findByIdAndUpdate(id,{transcriptText},{new:true})
+      res.status(200).json({
+      message: 'Transcript updated successfully',
+      data: result,
+    });
+  } catch (error) {
+    console.error('Error updating transcript:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 }

@@ -1,13 +1,13 @@
 const express=require('express')
 const router=express.Router()
-import { authToken } from '../middleware/authToken'
-import {adminLogin,transcriptvideo} from '../Controller/adminController'
+import { authToken } from '../middleware/adminauthtoken'
+import {adminLogin,edittrqanscript,transcriptvideo} from '../Controller/adminController'
 
 
 const { verify } = require('jsonwebtoken')
 
 router.post('/login',adminLogin)
-router.get('/api/all-transcript',transcriptvideo)
-
+router.get('/api/all-transcripts',authToken,transcriptvideo)
+router.patch('/api/update-transcript/:id',authToken,edittrqanscript)
 
 module.exports=router

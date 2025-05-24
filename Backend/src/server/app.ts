@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 const userRouter=require('../Routes/userrouter')
-// import { adminRouter } from '../interface/Routes/Adminroutes';
+const adminRouter=require('../Routes/adminroutes')
 // import { techRouter } from '../interface/Routes/Techroutes';
 
 export class App{
@@ -29,6 +29,7 @@ export class App{
 
     private setRoutes():void{
         this.app.use('/',userRouter)
+        this.app.use('/admin',adminRouter)
         
     }
 }

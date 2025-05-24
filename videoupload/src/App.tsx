@@ -1,8 +1,7 @@
 import { BrowserRouter as Router, Routes,Route,Navigate } from 'react-router'
 import './App.css'
-import Login from './components/Login'
-import VideoUI from './components/VideoUI'
-import Signup from './components/Signup'
+import UserRouter from './Routes/userRoutes'
+import AdminRouter from './Routes/adminRoutes'
 function App() {
  
 
@@ -12,9 +11,9 @@ function App() {
 
     <Router>
       <Routes>
-        <Route path='/' element={<Login/>}/>
-        <Route path='/signup' element={<Signup />}/>
-        <Route path='/videoupload' element={<VideoUI />}/>
+        <Route path='/*' element={<UserRouter/>}/>
+        <Route path='/admin/*' element={<AdminRouter />}/>
+
       </Routes>
     </Router>
     </>
