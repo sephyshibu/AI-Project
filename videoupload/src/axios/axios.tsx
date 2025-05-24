@@ -1,6 +1,7 @@
 import axios,{AxiosError,type InternalAxiosRequestConfig} from 'axios';
 import { store,persistor } from '../app/store';
-import { addtoken } from '../features/TokenSlice';
+import { addtoken,cleartoken } from '../features/TokenSlice';
+import { cleanUser } from '../features/UserSlice';
 
 
 const axiosInstance = axios.create({
@@ -70,9 +71,11 @@ axiosInstance.interceptors.response.use(
           console.error("Token refresh failed:", refreshError);
           // store.dispatch(logoutuser());
         //   toast.error("Session expired. Please login again.");
-          await persistor.purge();
+          // await persistor.purge();
+          store.dispatch(cleanUser())
+          store.dispatch(cleartoken())
           localStorage.removeItem("userId");
-          window.location.href = "/login";
+          window.location.href = "/";
           return Promise.reject(refreshError);
         }
       }

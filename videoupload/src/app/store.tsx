@@ -4,6 +4,9 @@ import storage from "redux-persist/lib/storage";
 
 import userReducer from '../features/UserSlice'
 import tokenreducer from '../features/TokenSlice'
+
+import adminReducer from '../features/AdminSlice'
+import admintokenreducer from '../features/AdminTokenSlice'
 // import { PersistPartial } from "redux-persist/es/types";
 
 
@@ -14,17 +17,36 @@ interface UserState {
 interface TokenState {
     token: string;
 }
+interface AdminState{
+    admin:Record<string,any>
+}
 
+interface AdminTokenState{
+    admintoken:string
+}
 
 const persistConfig={
     key:'root',
     storage,
-    blackList:['token']
+    blackList:['token','admintoken']
 }
+const userPersistConfig = {
+  key: 'user',
+  storage,
+  blacklist: ['token']
+};
+
+const adminPersistConfig = {
+  key: 'admin',
+  storage,
+  blacklist: ['admintoken']
+};
 
 const rootreducer=combineReducers({
-    user:userReducer,
-    token:tokenreducer
+     user: persistReducer(userPersistConfig, userReducer),
+     admin: persistReducer(adminPersistConfig, adminReducer),
+    token:tokenreducer,
+    admintoken: admintokenreducer,
 })
 
 const persistreducer=persistReducer(persistConfig,rootreducer)
@@ -51,6 +73,8 @@ export const store = configureStore({
 export type RootState = {
     user: UserState ;
     token: TokenState ;
+    admin:AdminState;
+    admintoken:AdminTokenState
 };
 
 // Dispatch type
